@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Game - Tebak Kartu</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Orbitron', monospace;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .game-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 30px;
+            padding: 40px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.2);
+            text-align: center;
+            max-width: 800px;
+            width: 90%;
+            position: relative;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            font-weight: 900;
+            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 30px;
+            text-shadow: 0 0 30px rgba(102, 126, 234, 0.5);
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            font-size: 1.2em;
+            font-weight: 700;
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin: 30px 0;
+            perspective: 1000px;
+        }
+
+        .card {
+            aspect-ratio: 1;
+            background: linear-gradient(145deg, #e6e6e6, #d9d9d9);
+            border-radius: 20px;
+            cursor: pointer;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card.matched {
+            transform: rotateY(180deg) scale(1.05);
+            background: linear-gradient(145deg, #b3b3b3, #a6a6a6);
+        }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3em;
+            font-weight: 900;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .card-back {
+            background: linear-gradient(145deg, #e6e6e6, #d9d9d9);
+            border: 3px solid #ccc;
+        }
+
+        .card-front {
+            background: linear-gradient(145deg, #b3b3b3, #a6a6a6);
+            transform: rotateY(180deg);
+            color: #555;
+        }
+
+        .win-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.95);
+            color: #00ff88;
+            padding: 40px;
+            border-radius: 20px;
+            font-size: 1.5em;
+            font-weight: 700;
+            text-align: center;
+            backdrop-filter: blur(20px);
+            display: none;
+            z-index: 1000;
+            animation: winPulse 1s infinite;
+        }
+
+        @keyframes winPulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.05); }
+        }
+
+        /* Login Link */
+        .login-link {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            font-size: 8px;
+            color: #999;
+            text-decoration: underline;
+            cursor: pointer;
+            z-index: 100;
+            transition: color 0.3s;
+        }
+
+        .login-link:hover {
+            color: #666;
+        }
+
+        /* Login Modal */
+        .login-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 2000;
+        }
+
+        .login-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .login-box h2 {
+            margin-bottom: 30px;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 700;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Secret Page */
+        .secret-page {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #111;
+            color: #fff;
+            padding: 40px;
+            overflow-y: auto;
+            z-index: 3000;
+        }
+
+        .secret-content {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.05);
+            padding: 40px;
+            border-radius: 20px;
+            backdrop-filter: blur(20px);
+        }
+
+        .secret-title {
+            font-size: 2.5em;
+            color: #ff4444;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .signature {
+            font-family: 'Brush Script MT', cursive;
+            font-size: 2em;
+            color: #ffd700;
+            margin: 20px 0;
+            text-align: right;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .info-item {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 15px;
+            border-left: 5px solid #ff4444;
+        }
+
+        .story {
+            background: rgba(0,0,0,0.3);
+            padding: 25px;
+            border-radius: 15px;
+            line-height: 1.8;
+            margin-top: 30px;
+        }
+
+        .cipher {
+            font-family: monospace;
+            font-size: 1.2em;
+            color: #00ff88;
+            background: rgba(0,255,136,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            background: #ff4444;
+            color: white;
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-link" onclick="showLogin()">login to continue</div>
+
+    <div class="game-container">
+        <h1>?? MEMORY GAME</h1>
+        <div class="game-info">
+            <div>Moves: <span id="moves">0</span></div>
+            <div>Matches: <span id="matches">0</span>/4</div>
+        </div>
+        <div class="game-board" id="gameBoard"></div>
+    </div>
+
+    <div class="win-message" id="winMessage">
+        ?? SELAMAT! KAMU MENANG! ??<br><br>
+        <div style="font-size: 0.8em; margin-top: 20px; opacity: 0.8;">
+            :clue =10011 10001 1100 1001 1110 1010 101 11 10100 1001 1111 1110 = BILANGAN BINER
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div class="login-modal" id="loginModal">
+        <div class="login-box">
+            <h2>?? Login Required</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>Username:</label>
+                    <input type="text" id="username" required>
+                </div>
+                <div class="form-group">
+                    <label>Password:</label>
+                    <input type="password" id="password" required>
+                </div>
+                <button type="submit" class="login-btn">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Secret Page -->
+    <div class="secret-page" id="secretPage">
+        <button class="close-btn" onclick="closeSecret()">×</button>
+        <div class="secret-content">
+            <div class="secret-title">Shadow Trade Organization Owner Data</div>
+            
+            <div class="signature">Rudy Antonie</div>
+            
+            <div class="info-grid">
+                <div class="info-item">
+                    <strong>Name:</strong> Rudy Antonie<br>
+                    <div class="cipher">1=9,0=21</div>
+                </div>
+                <div class="info-item">
+                    <strong>Age:</strong> 41<br>
+                    <strong>Weight:</strong> 82 kg<br>
+                    <strong>Height:</strong> 170cm
+                </div>
+                <div class="info-item">
+                    <strong>Status:</strong> Divorced<br>
+                    <strong>Rank:</strong> Dark Lord
+                </div>
+            </div>
+            
+            <div class="story">
+                <strong>ISI:</strong><br><br>
+                Rudy Antonie, seorang pria misterius yang tinggal di USA, telah membangun sebuah organisasi shadow trade yang kuat dan rahasia. Organisasi ini bergerak dalam penjualan barang-barang gelap antar negara, dengan bitcoin sebagai satu-satunya alat pembayaran.<br><br>
+
+                Dengan jaringan yang luas dan anak buah yang setia, Rudy telah berhasil membangun kerajaan bisnis gelapnya. 46 anak buahnya tersebar di seluruh dunia, menjalankan operasi-operasi rahasia dan memastikan bahwa barang-barang gelap sampai ke tangan pembeli dengan aman.<br><br>
+
+                Namun, tidak semua berjalan lancar. Empat anak buah Rudy telah tertangkap oleh pihak berwajib, meninggalkan jejak yang dapat membahayakan organisasi tersebut.<br><br>
+
+                Rudy sendiri tetap berada di balik bayang-bayang, mengendalikan operasi-operasinya dengan tangan besi. Dia tidak pernah menggunakan nama aslinya, dan hanya dikenal sebagai "The Shadow".<br><br>
+
+                Barang-barang yang dijual oleh organisasi Rudy beragam, dari senjata api hingga narkoba, dan bahkan manusia. Pembeli harus siap membayar dengan bitcoin, dan tidak ada tanya jawab.<br><br>
+
+                Jika kamu ingin membeli sesuatu yang tidak bisa, kamu tahu siapa yang harus dihubungi. Tapi, berhati-hatilah, karena di dunia shadow trade, tidak ada yang aman.<br><br>
+
+                Ada website khusus buat membeli barang dari Shadow Trade tapi website itu telah di ganti oleh TH44 menjadi website permainan dan kabarnya website tersebut ada sesuatu yang kita bisa membongkar identitas TH44<br>
+                <div style="font-family: monospace; font-size: 1.5em; color: #00ff00; margin-top: 20px;">
+                >>> IUUII I IUUU I IUUII IIU I <<<
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const cardsData = [
+            { text: 'ah', id: 1 },
+            { text: 'ah', id: 1 },
+            { text: 'ha', id: 2 },
+            { text: 'ha', id: 2 },
+            { text: 'AH', id: 3 },
+            { text: 'AH', id: 3 },
+            { text: 'HA', id: 4 },
+            { text: 'HA', id: 4 }
+        ];
+
+        let cards = [...cardsData];
+        let flippedCards = [];
+        let matchedCards = 0;
+        let moves = 0;
+        let gameBoard;
+
+        function initGame() {
+            gameBoard = document.getElementById('gameBoard');
+            cards = shuffle(cards);
+            gameBoard.innerHTML = '';
+            
+            cards.forEach((card, index) => {
+                const cardElement = document.createElement('div');
+                cardElement.className = 'card';
+                cardElement.dataset.id = card.id;
+                cardElement.innerHTML = `
+                    <div class="card-back">?</div>
+                    <div class="card-front">${card.text}</div>
+                `;
+                cardElement.addEventListener('click', flipCard);
+                gameBoard.appendChild(cardElement);
+            });
+        }
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function flipCard(event) {
+            const card = event.currentTarget;
+            if (flippedCards.length < 2 && !card.classList.contains('flipped') && !card.classList.contains('matched')) {
+                card.classList.add('flipped');
+                flippedCards.push(card);
+                
+                if (flippedCards.length === 2) {
+                    moves++;
+                    document.getElementById('moves').textContent = moves;
+                    checkMatch();
+                }
+            }
+        }
+
+        function checkMatch() {
+            const [card1, card2] = flippedCards;
+            if (card1.dataset.id === card2.dataset.id) {
+                card1.classList.add('matched');
+                card2.classList.add('matched');
+                matchedCards++;
+                document.getElementById('matches').textContent = matchedCards;
+                flippedCards = [];
+                
+                if (matchedCards === 4) {
+                    setTimeout(() => {
+                        document.getElementById('winMessage').style.display = 'block';
+                    }, 1000);
+                }
+            } else {
+                setTimeout(() => {
+                    card1.classList.remove('flipped');
+                    card2.classList.remove('flipped');
+                    flippedCards = [];
+                }, 1000);
+            }
+        }
+
+        // Login functionality with SQLi vulnerability
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            // Vulnerable SQL query simulation
+            const sqlQuery = `SELECT * FROM users WHERE username='${username}' AND password='${password}'`;
+            
+            // SQL Injection detection (basic)
+            if (username.includes("'") || password.includes("'") || username.includes("OR") || password.includes("OR")) {
+                // Simulate successful bypass
+                document.getElementById('loginModal').style.display = 'none';
+                document.getElementById('secretPage').style.display = 'block';
+                return;
+            }
+            
+            // Normal login check
+            if (username === 'admin' && password === 'adminadmin') {
+                document.getElementById('loginModal').style.display = 'none';
+                document.getElementById('secretPage').style.display = 'block';
+            } else {
+                alert('Login failed! Try SQL Injection:\n\nUsername: \' OR 1=1 --\nPassword: anything');
+            }
+        });
+
+        function showLogin() {
+            document.getElementById('loginModal').style.display = 'block';
+        }
+
+        function closeSecret() {
+            document.getElementById('secretPage').style.display = 'none';
+        }
+
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            const loginModal = document.getElementById('loginModal');
+            const secretPage = document.getElementById('secretPage');
+            
+            if (event.target === loginModal) {
+                loginModal.style.display = 'none';
+            }
+            if (event.target === secretPage) {
+                secretPage.style.display = 'none';
+            }
+        }
+
+        // Initialize game
+        initGame();
+    </script>
+</body>
+</html>
